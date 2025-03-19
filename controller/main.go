@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"sort"
 	"sync"
 	"time"
 
 	"distributed_file_system/common"
-	dfs "distributed_file_system/proto"
 )
 
 // FileMetadata stores information about a file in the system
@@ -56,8 +54,8 @@ func NewController(listenPort int) *Controller {
 	return &Controller{
 		nodes:             make(map[string]*NodeInfo),
 		files:             make(map[string]*FileMetadata),
-		replicationFactor: common.DefaultReplication,
-		heartbeatTimeout:  common.HeartbeatTimeout * time.Second,
+		replicationFactor: 3, // Default replication factor
+		heartbeatTimeout:  15 * time.Second,
 		port:             listenPort,
 	}
 }
@@ -116,7 +114,7 @@ func (c *Controller) handleConnection(conn net.Conn) {
 		case common.MsgTypeNodeStatusRequest:
 			response, respErr = c.handleNodeStatusRequest(data)
 		default:
-			respErr = &common.ProtocolError{Message: fmt.Sprintf("unknown message type: %d", msgType)}
+			respErr = fmt.Errorf("unknown message type: %d", msgType)
 		}
 
 		if respErr != nil {

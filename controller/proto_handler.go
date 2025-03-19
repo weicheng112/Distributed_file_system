@@ -64,32 +64,31 @@ func (c *Controller) handleStorageRequest(data []byte) ([]byte, error) {
 
 	// Create chunk placements
 	response := &dfs.StorageResponse{
-		ChunkPlacements: make([]*dfs.ChunkPlacement, numChunks),
+		ChunkPlacements: make([]*dfs.ChunkPlacement, 0, numChunks),
 	}
 
 	// For each chunk, select storage nodes
-	for i := uint64(0); i < numChunks; i++ {
+	for chunkNum := uint64(0); chunkNum < numChunks; chunkNum++ {
 		nodes := c.selectStorageNodes(int(request.ChunkSize))
 		if len(nodes) < c.replicationFactor {
 			return nil, fmt.Errorf("not enough storage nodes available")
 		}
 
-		response.ChunkPlacements[i] = &dfs.ChunkPlacement{
-			ChunkNumber:   uint32(i),
+		placement := &dfs.ChunkPlacement{
+			ChunkNumber:   uint32(chunkNum),
 			StorageNodes: nodes,
 		}
-	}
+		response.ChunkPlacements = append(response.ChunkPlacements, placement)
 
-	// Create file metadata
-	c.files[request.Filename] = &FileMetadata{
-		Size:      int64(request.FileSize),
-		ChunkSize: int(request.ChunkSize),
-		Chunks:    make(map[int][]string),
-	}
-
-	// Store chunk placements in metadata
-	for i, placement := range response.ChunkPlacements {
-		c.files[request.Filename].Chunks[int(placement.ChunkNumber)] = placement.StorageNodes
+		// Store chunk placements in metadata
+		if _, exists := c.files[request.Filename]; !exists {
+			c.files[request.Filename] = &FileMetadata{
+				Size:      int64(request.FileSize),
+				ChunkSize: int(request.ChunkSize),
+				Chunks:    make(map[int][]string),
+			}
+		}
+		c.files[request.Filename].Chunks[int(chunkNum)] = nodes
 	}
 
 	// Serialize response
@@ -119,15 +118,16 @@ func (c *Controller) handleRetrievalRequest(data []byte) ([]byte, error) {
 
 	// Create chunk locations response
 	response := &dfs.RetrievalResponse{
-		Chunks: make([]*dfs.ChunkLocation, len(metadata.Chunks)),
+		Chunks: make([]*dfs.ChunkLocation, 0, len(metadata.Chunks)),
 	}
 
 	// Add locations for each chunk
 	for chunkNum, nodes := range metadata.Chunks {
-		response.Chunks[chunkNum] = &dfs.ChunkLocation{
+		chunk := &dfs.ChunkLocation{
 			ChunkNumber:   uint32(chunkNum),
 			StorageNodes: nodes,
 		}
+		response.Chunks = append(response.Chunks, chunk)
 	}
 
 	// Serialize response
@@ -213,11 +213,12 @@ func (c *Controller) handleListRequest(data []byte) ([]byte, error) {
 	}
 
 	for filename, metadata := range c.files {
-		response.Files = append(response.Files, &dfs.FileInfo{
+		fileInfo := &dfs.FileInfo{
 			Filename:  filename,
 			Size:      uint64(metadata.Size),
 			NumChunks: uint32(len(metadata.Chunks)),
-		})
+		}
+		response.Files = append(response.Files, fileInfo)
 	}
 
 	// Serialize response
@@ -240,11 +241,12 @@ func (c *Controller) handleNodeStatusRequest(data []byte) ([]byte, error) {
 
 	var totalSpace uint64
 	for _, node := range c.nodes {
-		response.Nodes = append(response.Nodes, &dfs.NodeInfo{
+		nodeInfo := &dfs.NodeInfo{
 			NodeId:           node.ID,
 			FreeSpace:       node.FreeSpace,
 			RequestsProcessed: node.RequestsHandled,
-		})
+		}
+		response.Nodes = append(response.Nodes, nodeInfo)
 		totalSpace += node.FreeSpace
 	}
 
