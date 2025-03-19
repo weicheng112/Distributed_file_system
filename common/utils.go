@@ -9,29 +9,6 @@ import (
 	"os"
 )
 
-const (
-	// Message types
-	MsgTypeHeartbeat        = 1
-	MsgTypeStorageRequest   = 2
-	MsgTypeStorageResponse  = 3
-	MsgTypeRetrievalRequest = 4
-	MsgTypeRetrievalResponse = 5
-	MsgTypeDeleteRequest    = 6
-	MsgTypeDeleteResponse   = 7
-	MsgTypeListRequest      = 8
-	MsgTypeListResponse     = 9
-	MsgTypeNodeStatusRequest = 10
-	MsgTypeNodeStatusResponse = 11
-	MsgTypeChunkStore       = 12
-	MsgTypeChunkRetrieve    = 13
-
-	// Default values
-	DefaultChunkSize    = 64 * 1024 * 1024 // 64MB
-	DefaultReplication  = 3
-	HeartbeatInterval  = 5  // seconds
-	HeartbeatTimeout   = 15 // seconds
-)
-
 // WriteMessage writes a protobuf message to a connection with a header
 func WriteMessage(conn net.Conn, msgType byte, data []byte) error {
 	// Header: [Type (1 byte)][Length (4 bytes)][Data (length bytes)]
