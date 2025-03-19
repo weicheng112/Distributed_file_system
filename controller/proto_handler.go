@@ -97,7 +97,7 @@ func (c *Controller) handleStorageRequest(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to marshal response: %v", err)
 	}
 
-	return responseData, common.MsgTypeStorageResponse, nil
+	return responseData, nil
 }
 
 // handleRetrievalRequest processes a file retrieval request from a client
