@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
+	"distributed_file_system/common"
+	dfs "distributed_file_system/proto"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -66,7 +69,7 @@ func (c *Controller) handleStorageRequest(data []byte) ([]byte, error) {
 
 	// For each chunk, select storage nodes
 	for i := uint64(0); i < numChunks; i++ {
-		nodes := c.selectStorageNodes(request.ChunkSize)
+		nodes := c.selectStorageNodes(int(request.ChunkSize))
 		if len(nodes) < c.replicationFactor {
 			return nil, fmt.Errorf("not enough storage nodes available")
 		}

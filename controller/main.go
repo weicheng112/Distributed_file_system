@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"distributed_file_system/common"
-	pb "distributed_file_system/proto"
+	dfs "distributed_file_system/proto"
 )
 
 // FileMetadata stores information about a file in the system
@@ -47,20 +47,24 @@ type Controller struct {
 
 	// Listener for incoming connections
 	listener net.Listener
+
+	// Port number
+	port int
 }
 
-func NewController(port int) *Controller {
+func NewController(listenPort int) *Controller {
 	return &Controller{
 		nodes:             make(map[string]*NodeInfo),
 		files:             make(map[string]*FileMetadata),
 		replicationFactor: common.DefaultReplication,
 		heartbeatTimeout:  common.HeartbeatTimeout * time.Second,
+		port:             listenPort,
 	}
 }
 
 func (c *Controller) Start() error {
 	// Start listening for connections
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", c.port))
 	if err != nil {
 		return fmt.Errorf("failed to start listener: %v", err)
 	}
@@ -70,7 +74,7 @@ func (c *Controller) Start() error {
 	go c.checkNodeHealth()
 	go c.maintainReplication()
 
-	log.Printf("Controller started on port %d", port)
+	log.Printf("Controller started on port %d", c.port)
 
 	// Accept and handle connections
 	for {
@@ -199,10 +203,10 @@ func (c *Controller) replicateChunk(filename string, chunkNum int) {
 }
 
 func main() {
-	port := flag.Int("port", 8000, "Port to listen on")
+	listenPort := flag.Int("port", 8000, "Port to listen on")
 	flag.Parse()
 
-	controller := NewController(*port)
+	controller := NewController(*listenPort)
 	if err := controller.Start(); err != nil {
 		log.Fatalf("Controller failed to start: %v", err)
 	}
