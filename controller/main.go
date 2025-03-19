@@ -54,8 +54,8 @@ func NewController(listenPort int) *Controller {
 	return &Controller{
 		nodes:             make(map[string]*NodeInfo),
 		files:             make(map[string]*FileMetadata),
-		replicationFactor: 3, // Default replication factor
-		heartbeatTimeout:  15 * time.Second,
+		replicationFactor: common.DefaultReplication,
+		heartbeatTimeout:  common.HeartbeatTimeout * time.Second,
 		port:             listenPort,
 	}
 }
