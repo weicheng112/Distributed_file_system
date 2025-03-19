@@ -14,23 +14,20 @@ CONTROLLER_BINARY=controller
 STORAGE_BINARY=storage
 CLIENT_BINARY=client
 
-# Source directories
-CONTROLLER_DIR=./controller
-STORAGE_DIR=./storage
-CLIENT_DIR=./client
+.PHONY: all clean proto deps build test tools
 
-.PHONY: all clean proto deps build test controller storage client
+# Main target
+all: clean setup build
 
-# Main targets
-all: clean deps proto build
+# Setup includes creating build dir, generating proto, and getting deps
+setup: $(BUILD_DIR) proto deps
 
-build: $(BUILD_DIR) controller storage client
-
+# Create build directory
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 # Generate protocol buffer code
-proto: $(BUILD_DIR)
+proto:
 	@echo "Generating Protocol Buffer code..."
 	protoc --go_out=. --go_opt=paths=source_relative proto/dfs.proto
 
@@ -40,20 +37,14 @@ deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
-# Build controller
-controller: $(BUILD_DIR) proto
+# Build all components
+build: 
 	@echo "Building controller..."
-	$(GOBUILD) -o $(BUILD_DIR)/$(CONTROLLER_BINARY) $(CONTROLLER_DIR)
-
-# Build storage node
-storage: $(BUILD_DIR) proto
+	$(GOBUILD) -o $(BUILD_DIR)/$(CONTROLLER_BINARY) ./controller
 	@echo "Building storage node..."
-	$(GOBUILD) -o $(BUILD_DIR)/$(STORAGE_BINARY) $(STORAGE_DIR)
-
-# Build client
-client: $(BUILD_DIR) proto
+	$(GOBUILD) -o $(BUILD_DIR)/$(STORAGE_BINARY) ./storage
 	@echo "Building client..."
-	$(GOBUILD) -o $(BUILD_DIR)/$(CLIENT_BINARY) $(CLIENT_DIR)
+	$(GOBUILD) -o $(BUILD_DIR)/$(CLIENT_BINARY) ./client
 
 # Clean build artifacts
 clean:
@@ -74,26 +65,24 @@ tools:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Run targets for development
-run-controller: controller
+run-controller: all
 	./$(BUILD_DIR)/$(CONTROLLER_BINARY) -port 8000
 
-run-storage: storage
+run-storage: all
 	./$(BUILD_DIR)/$(STORAGE_BINARY) -id 8001 -controller localhost:8000 -data /tmp/dfs/storage1
 
-run-client: client
+run-client: all
 	./$(BUILD_DIR)/$(CLIENT_BINARY) -controller localhost:8000
 
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  all          - Clean, get dependencies, generate proto files, and build all components"
+	@echo "  all          - Clean, setup, and build all components"
 	@echo "  clean        - Remove build artifacts"
+	@echo "  setup        - Create build dir, generate proto files, get dependencies"
 	@echo "  proto        - Generate Go code from Protocol Buffer definitions"
 	@echo "  deps         - Download and verify dependencies"
 	@echo "  build        - Build all components"
-	@echo "  controller   - Build only the controller"
-	@echo "  storage      - Build only the storage node"
-	@echo "  client       - Build only the client"
 	@echo "  test         - Run tests"
 	@echo "  tools        - Install required tools"
 	@echo "  run-controller - Build and run the controller"

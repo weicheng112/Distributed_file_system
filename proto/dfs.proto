@@ -1,7 +1,8 @@
 syntax = "proto3";
+
 package dfs;
 
-option go_package = "distributed_file_system/proto";
+option go_package = "./proto";
 
 // Message for heartbeat from storage node to controller
 message Heartbeat {
